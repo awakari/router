@@ -33,11 +33,11 @@ spec:
             - name: API_PORT
               value: "{{ .Values.service.port }}"
             - name: API_MATCHES_URI
-              value: {{ .Values.api.matches.uri }}
+              value: "{{ .Values.api.matches.uri }}"
             - name: API_MATCHES_BATCH_SIZE
-              value: {{ .Values.api.matches.batchSize }}
+              value: "{{ .Values.api.matches.batchSize }}"
             - name: API_OUTPUT_URI
-              value: {{ .Values.api.output.uri }}
+              value: "{{ .Values.api.output.uri }}"
             - name: LOG_LEVEL
               value: "{{ .Values.log.level }}"
           securityContext:

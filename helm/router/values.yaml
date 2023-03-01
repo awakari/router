@@ -82,7 +82,7 @@ affinity: {}
 
 api:
   matches:
-    batchSize: "100"
+    batchSize: 100
     uri: "matches:8080"
   output:
     uri: "output:8080"
