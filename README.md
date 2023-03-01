@@ -100,11 +100,25 @@ grpcurl \
   -proto api/grpc/service.proto \
   -d @ \
   localhost:8080 \
-  route.Service/Route
+  router.Service/Route
 ```
 Payload:
 ```json
-TODO
+{
+   "id": "3426d090-1b8a-4a09-ac9c-41f2de24d5ac",
+   "metadata": {
+      "source": {
+         "ce_string": "com.lipsum"
+      },
+      "specversion": {
+         "ce_string": "1.0"
+      },
+      "type": {
+         "ce_string": "com.lipsum"
+      }
+   },
+   "text_data": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+}
 ```
 
 # 5. Design
