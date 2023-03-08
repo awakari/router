@@ -3,7 +3,6 @@ package main
 import (
 	grpcApi "github.com/awakari/router/api/grpc"
 	"github.com/awakari/router/api/grpc/matches"
-	"github.com/awakari/router/api/grpc/output"
 	"github.com/awakari/router/config"
 	"github.com/awakari/router/service"
 	"golang.org/x/exp/slog"

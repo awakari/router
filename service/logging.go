@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/awakari/router/model"
+	"github.com/cloudevents/sdk-go/v2/event"
 	"golang.org/x/exp/slog"
 )
 
@@ -21,9 +21,9 @@ func NewLoggingMiddleware(svc Service, log *slog.Logger) Service {
 	}
 }
 
-func (lm loggingMiddleware) Route(ctx context.Context, msg model.Message) (err error) {
+func (lm loggingMiddleware) Route(ctx context.Context, msg *event.Event) (err error) {
 	defer func() {
-		lm.log.Debug(fmt.Sprintf("Route(msg.Id=%s): %s", msg.Id, err))
+		lm.log.Debug(fmt.Sprintf("Route(msg.Id=%s): %s", msg.ID(), err))
 	}()
 	return lm.svc.Route(ctx, msg)
 }
