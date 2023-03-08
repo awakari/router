@@ -26,32 +26,45 @@
 
 # 1. Overview
 
-TBD
-
 ## 1.1. Purpose
 
-TBD
+For a given incoming message, router service fetches all matching subscriptions and routes the message to all found
+subscriptions destinations. The service is stateless and doesn't use any storage except the work queue.
 
 ## 1.2. Definitions
 
-TBD
+Router works with messages and subscriptions. Messages are in the [CloudEvents](https://cloudevents.io/) format.
+The following subscription attributes are used by router:
+1. Id
+2. Destinations
+
+Subscription destination describes the destination route where the matching message should be sent to.
 
 # 2. Configuration
 
 The service is configurable using the environment variables:
 
-| Variable               | Example value  | Description                                                          |
-|------------------------|----------------|----------------------------------------------------------------------|
-| API_PORT               | `8080`         | gRPC API port                                                        |
-| API_MATCHES_URI        | `matches:8080` | [Matches](https://github.com/awakari/matches) dependency service URI |
-| API_MATCHES_BATCH_SIZE | `100`          | Matches query results size limit                                     |
-| API_OUTPUT_URI         | `output:8080`  | Output dependency service URI                                        |
+| Variable                    | Example value   | Description                                                          |
+|-----------------------------|-----------------|----------------------------------------------------------------------|
+| API_PORT                    | `8080`          | gRPC API port                                                        |
+| API_CONSUMER_URI            | `consumer:8080` | Consumer dependency service URI                                      |
+| API_MATCHES_URI             | `matches:8080`  | [Matches](https://github.com/awakari/matches) dependency service URI |
+| API_MATCHES_BATCH_SIZE      | `100`           | Matches query results size limit                                     |
+| QUEUE_BATCH_SIZE            | `100`           | Work queue processing batch size                                     |
+| QUEUE_LIMIT                 | `1000`          | Work queue length limit                                              |
+| QUEUE_NAME                  | `router`        | Work queue name                                                      |
+| QUEUE_SLEEP_ON_EMPTY_MILLIS | `1000`          | Time to sleep if work queue is empty                                 |
+| QUEUE_SLEEP_ON_ERROR_MILLIS | `1000`          | Time to sleep if failed to poll the work queue                       |
+| QUEUE_URI                   | `queue:8080`    | Work queue service URI                                               |
 
 # 3. Deployment
 
 ## 3.1. Prerequisites
 
-[Matches](https://github.com/awakari/matches) dependency service should be deployed.
+The following dependency services should be deployed and available:
+* [Matches](https://github.com/awakari/matches)
+* A queue service implementation, e.g. [Queue-Nats](https://github.com/awakari/queue-nats)
+* A consumer service implementation, e.g. [Consumer-Log](https://github.com/awakari/consumer-log)
 
 ## 3.2. Bare
 
@@ -62,7 +75,6 @@ Then run the command:
 ```shell
 API_PORT=8082 \
 API_MATCHES_URI=localhost:8080 \
-API_OUTPUT_URI=localhost:8081 \
 ./router
 ```
 
@@ -100,22 +112,22 @@ grpcurl \
   -proto api/grpc/service.proto \
   -d @ \
   localhost:8080 \
-  router.Service/Route
+  router.Service/Submit
 ```
 Payload:
 ```json
 {
    "id": "3426d090-1b8a-4a09-ac9c-41f2de24d5ac",
-   "metadata": {
-      "source": {
-         "ce_string": "com.lipsum"
+   "type": "example.type",
+   "source": "example/uri",
+   "spec_version": "1.0",
+   "attributes": {
+      "subject": {
+         "ce_string": "test"
       },
-      "specversion": {
-         "ce_string": "1.0"
-      },
-      "type": {
-         "ce_string": "com.lipsum"
-      }
+      "time": {
+         "ce_timestamp": "1985-04-12T23:20:50.52Z"
+      } 
    },
    "text_data": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
 }

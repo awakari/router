@@ -36,10 +36,20 @@ spec:
               value: "{{ .Values.api.matches.uri }}"
             - name: API_MATCHES_BATCH_SIZE
               value: "{{ .Values.api.matches.batchSize }}"
-            - name: API_OUTPUT_URI
-              value: "{{ .Values.api.output.uri }}"
+            - name: API_CONSUMER_URI
+              value: "{{ .Values.api.consumer.uri }}"
             - name: LOG_LEVEL
               value: "{{ .Values.log.level }}"
+            - name: QUEUE_LIMIT
+              value: "{{ .Values.queue.limit }}"
+            - name: QUEUE_NAME
+              value: "{{ .Release.Name }}"
+            - name: QUEUE_SLEEP_ON_EMPTY_MILLIS
+              value: "{{ .Values.queue.sleepOn.emptyMillis }}"
+            - name: QUEUE_SLEEP_ON_ERROR_MILLIS
+              value: "{{ .Values.queue.sleepOn.errorMillis }}"
+            - name: QUEUE_URI
+              value: "{{ .Values.queue.uri }}"
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"

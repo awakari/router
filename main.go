@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	grpcApi "github.com/awakari/router/api/grpc"
+	"github.com/awakari/router/api/grpc/consumer"
 	"github.com/awakari/router/api/grpc/matches"
-	"github.com/awakari/router/api/grpc/output"
+	"github.com/awakari/router/api/grpc/queue"
 	"github.com/awakari/router/config"
 	"github.com/awakari/router/service"
 	"golang.org/x/exp/slog"
@@ -20,7 +22,7 @@ func main() {
 		slog.Error("failed to load the config", err)
 	}
 	opts := slog.HandlerOptions{
-		Level: cfg.Log.Level,
+		Level: slog.Level(cfg.Log.Level),
 	}
 	log := slog.New(opts.NewTextHandler(os.Stdout))
 	//
@@ -32,16 +34,30 @@ func main() {
 	matchesSvc := matches.NewService(matchesClient)
 	matchesSvc = matches.NewLoggingMiddleware(matchesSvc, log)
 	//
-	outputConn, err := grpc.Dial(cfg.Api.Output.Uri, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	consumerConn, err := grpc.Dial(cfg.Api.Consumer.Uri, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Error("failed to connect the output service", err)
+		log.Error("failed to connect the consumer service", err)
 	}
-	outputClient := output.NewServiceClient(outputConn)
-	outputSvc := output.NewService(outputClient)
-	outputSvc = output.NewLoggingMiddleware(outputSvc, log)
+	consumerClient := consumer.NewServiceClient(consumerConn)
+	consumerSvc := consumer.NewService(consumerClient)
+	consumerSvc = consumer.NewLoggingMiddleware(consumerSvc, log)
 	//
-	svc := service.NewService(matchesSvc, cfg.Api.Matches.BatchSize, outputSvc)
+	queueConn, err := grpc.Dial(cfg.Queue.Uri, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Error("failed to connect the queue service", err)
+	}
+	queueClient := queue.NewServiceClient(queueConn)
+	queueSvc := queue.NewService(queueClient)
+	queueSvc = queue.NewLoggingMiddleware(queueSvc, log)
+	err = queueSvc.SetQueue(context.TODO(), cfg.Queue.Name, cfg.Queue.Limit)
+	if err != nil {
+		log.Error("failed to create the work queue", err)
+	}
+	//
+	svc := service.NewService(matchesSvc, cfg.Api.Matches.BatchSize, consumerSvc)
 	svc = service.NewLoggingMiddleware(svc, log)
+	svc = service.NewQueueMiddleware(svc, queueSvc, cfg.Queue)
+	//
 	log.Info("connected, starting to listen for incoming requests...")
 	if err = grpcApi.Serve(svc, cfg.Api.Port); err != nil {
 		log.Error("", err)
