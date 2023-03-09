@@ -6,8 +6,8 @@ COVERAGE_FILE_NAME=cover.out
 COVERAGE_TMP_FILE_NAME=cover.tmp
 
 proto:
-	go install github.com/golang/protobuf/protoc-gen-go@latest
-	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0
+	go install github.com/golang/protobuf/protoc-gen-go
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc
 	PATH=${PATH}:~/go/bin protoc --go_out=plugins=grpc:. --go_opt=paths=source_relative \
 		api/grpc/*.proto \
 		api/grpc/consumer/*.proto \
