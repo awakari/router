@@ -90,7 +90,7 @@ func decodeError(src error) (dst error) {
 		dst = nil
 	case codes.NotFound:
 		dst = ErrQueueMissing
-	case codes.Unavailable:
+	case codes.ResourceExhausted:
 		dst = ErrQueueFull
 	default:
 		dst = fmt.Errorf("%w: %s", ErrInternal, src)

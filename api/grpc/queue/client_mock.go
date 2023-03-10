@@ -75,7 +75,7 @@ func (cm clientMock) SubmitMessage(ctx context.Context, in *SubmitMessageRequest
 	case "fail":
 		err = status.Error(codes.Internal, "failed to submit the message")
 	case "full":
-		err = status.Error(codes.Unavailable, "failed to submit the message")
+		err = status.Error(codes.ResourceExhausted, "failed to submit the message")
 	case "missing":
 		err = status.Error(codes.NotFound, "failed to submit the message")
 	}
