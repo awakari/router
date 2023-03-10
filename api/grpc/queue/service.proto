@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package queue;
+
+option go_package = "./api/grpc/queue";
+
+import "google/protobuf/empty.proto";
+import "api/grpc/cloudevents/cloudevent.proto";
+
+service Service {
+
+  // Creates a new queue or updates the existing one's length limit.
+  rpc SetQueue(SetQueueRequest) returns (google.protobuf.Empty);
+
+  // Enqueue a message to the specified queue.
+  rpc SubmitMessage(SubmitMessageRequest) returns (google.protobuf.Empty);
+
+  // Get new messages batch from the specified queue. Also removes the received messages from the queue.
+  rpc Poll(PollRequest) returns (PollResponse);
+}
+
+message SetQueueRequest{
+  string name = 1;
+  uint32 limit = 3;
+}
+
+message SubmitMessageRequest {
+  string queue = 1;
+  pb.CloudEvent msg = 2;
+}
+
+message PollRequest {
+  string queue = 1;
+  uint32 limit = 2;
+}
+
+message PollResponse {
+  repeated pb.CloudEvent msgs = 1;
+}

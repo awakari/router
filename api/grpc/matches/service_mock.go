@@ -15,7 +15,7 @@ func NewServiceMock() Service {
 func (sm serviceMock) Search(ctx context.Context, msgId string, cursor string, limit uint32) (page []model.SubscriptionBase, err error) {
 	if msgId == "fail" {
 		err = ErrInternal
-	} else {
+	} else if cursor == "" {
 		page = []model.SubscriptionBase{
 			{
 				Id: "sub0",
@@ -27,6 +27,7 @@ func (sm serviceMock) Search(ctx context.Context, msgId string, cursor string, l
 				Id: "sub1",
 				Destinations: []string{
 					"dst1",
+					"dst2",
 				},
 			},
 		}

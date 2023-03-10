@@ -2,32 +2,33 @@ package service
 
 import (
 	"context"
+	"github.com/awakari/router/api/grpc/consumer"
 	"github.com/awakari/router/api/grpc/matches"
-	"github.com/awakari/router/api/grpc/output"
 	"github.com/awakari/router/model"
+	"github.com/cloudevents/sdk-go/v2/event"
 	"golang.org/x/sync/errgroup"
 )
 
 type Service interface {
-	Route(ctx context.Context, msg model.Message) (err error)
+	Submit(ctx context.Context, msg *event.Event) (err error)
 }
 
 type service struct {
 	matchesSvc       matches.Service
 	matchesBatchSize uint32
-	outputSvc        output.Service
+	consumerSvc      consumer.Service
 }
 
-func NewService(matchesSvc matches.Service, matchesBatchSize uint32, outputSvc output.Service) Service {
+func NewService(matchesSvc matches.Service, matchesBatchSize uint32, consumerSvc consumer.Service) Service {
 	return service{
 		matchesSvc:       matchesSvc,
 		matchesBatchSize: matchesBatchSize,
-		outputSvc:        outputSvc,
+		consumerSvc:      consumerSvc,
 	}
 }
 
-func (svc service) Route(ctx context.Context, msg model.Message) (err error) {
-	msgId := msg.Id
+func (svc service) Submit(ctx context.Context, msg *event.Event) (err error) {
+	msgId := msg.ID()
 	var cursor string
 	var matchesPage []model.SubscriptionBase
 	for {
@@ -40,8 +41,9 @@ func (svc service) Route(ctx context.Context, msg model.Message) (err error) {
 			if i == len(matchesPage)-1 {
 				cursor = m.Id
 			}
+			sub := m // copy to avoid the data race test error
 			g.Go(func() error {
-				return svc.routeBySubscription(gCtx, msg, m)
+				return svc.routeBySubscription(gCtx, msg, sub)
 			})
 		}
 		err = g.Wait()
@@ -52,35 +54,25 @@ func (svc service) Route(ctx context.Context, msg model.Message) (err error) {
 	return
 }
 
-func (svc service) routeBySubscription(ctx context.Context, msg model.Message, sub model.SubscriptionBase) (err error) {
-	md := msg.Metadata
-	msg.Metadata = make(map[string]any)
-	for k, v := range md {
-		msg.Metadata[k] = v
-	}
-	msg.Metadata[model.KeySubscription] = sub.Id
+func (svc service) routeBySubscription(ctx context.Context, msg *event.Event, sub model.SubscriptionBase) (err error) {
 	dsts := sub.Destinations
 	if len(dsts) == 1 {
+		msgCopy := msg.Clone()
+		msgCopy.SetExtension(model.KeySubscription, sub.Id)
+		msgCopy.SetExtension(model.KeyDestination, dsts[0])
 		// it's expected that many of subscriptions have single route destination only, hence avoid creating a goroutine
-		err = svc.routeToDestination(ctx, msg, dsts[0])
+		err = svc.consumerSvc.Submit(ctx, &msgCopy)
 	} else {
 		g, gCtx := errgroup.WithContext(ctx)
 		for _, dst := range dsts {
+			msgCopy := msg.Clone()
+			msgCopy.SetExtension(model.KeySubscription, sub.Id)
+			msgCopy.SetExtension(model.KeyDestination, dst)
 			g.Go(func() error {
-				return svc.routeToDestination(gCtx, msg, dst)
+				return svc.consumerSvc.Submit(gCtx, &msgCopy)
 			})
 		}
 		err = g.Wait()
 	}
 	return
-}
-
-func (svc service) routeToDestination(ctx context.Context, msg model.Message, dst string) (err error) {
-	md := msg.Metadata
-	msg.Metadata = make(map[string]any)
-	for k, v := range md {
-		msg.Metadata[k] = v
-	}
-	msg.Metadata[model.KeyDestination] = dst
-	return svc.outputSvc.Publish(ctx, msg)
 }

@@ -84,8 +84,15 @@ api:
   matches:
     batchSize: 100
     uri: "matches:8080"
-  output:
-    uri: "output:8080"
+  consumer:
+    uri: "consumer:8080"
 log:
   # https://pkg.go.dev/golang.org/x/exp/slog#Level
   level: -4
+queue:
+  batchSize: 100
+  limit: 1000
+  sleepOn:
+    emptyMillis: 1000
+    errorMillis: 1000
+  uri: "queue:8080"

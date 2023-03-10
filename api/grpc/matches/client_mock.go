@@ -7,10 +7,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type (
-	clientMock struct {
-	}
-)
+type clientMock struct {
+}
 
 func NewClientMock() ServiceClient {
 	return clientMock{}

@@ -1,4 +1,4 @@
-package service
+package consumer
 
 import (
 	"context"
@@ -21,7 +21,7 @@ func NewLoggingMiddleware(svc Service, log *slog.Logger) Service {
 
 func (lm loggingMiddleware) Submit(ctx context.Context, msg *event.Event) (err error) {
 	defer func() {
-		lm.log.Debug(fmt.Sprintf("Submit(msg.Id=%s): %s", msg.ID(), err))
+		lm.log.Debug(fmt.Sprintf("consumer.Submit(msg.Id=%s): %s", msg.ID(), err))
 	}()
 	return lm.svc.Submit(ctx, msg)
 }

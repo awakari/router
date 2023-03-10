@@ -2,10 +2,15 @@ package grpc
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	grpcMsg "github.com/awakari/router/api/grpc/message"
-	"github.com/awakari/router/model"
+	"github.com/awakari/router/api/grpc/consumer"
+	"github.com/awakari/router/api/grpc/matches"
+	"github.com/awakari/router/api/grpc/queue"
 	"github.com/awakari/router/service"
+	format "github.com/cloudevents/sdk-go/binding/format/protobuf/v2"
+	"github.com/cloudevents/sdk-go/binding/format/protobuf/v2/pb"
+	"github.com/cloudevents/sdk-go/v2/event"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -23,47 +28,36 @@ func NewServiceController(svc service.Service) ServiceServer {
 	}
 }
 
-func (sc serviceController) Route(ctx context.Context, req *grpcMsg.Message) (*emptypb.Empty, error) {
-	msg := decodeMessage(req)
-	err := sc.svc.Route(ctx, msg)
-	err = encodeError(err)
+func (sc serviceController) Submit(ctx context.Context, req *pb.CloudEvent) (resp *emptypb.Empty, err error) {
+	var msg *event.Event
+	msg, err = format.FromProto(req)
+	if err == nil {
+		err = sc.svc.Submit(ctx, msg)
+		err = encodeError(err)
+	}
 	return &emptypb.Empty{}, err
 }
 
-func decodeMessage(src *grpcMsg.Message) (msg model.Message) {
-	msg.Id = src.Id
-	md := make(map[string]any)
-	for k, v := range src.Metadata {
-		switch at := v.Attr.(type) {
-		case *grpcMsg.AttrValue_CeBoolean:
-			md[k] = at.CeBoolean
-		case *grpcMsg.AttrValue_CeBytes:
-			md[k] = at.CeBytes
-		case *grpcMsg.AttrValue_CeInteger:
-			md[k] = at.CeInteger
-		case *grpcMsg.AttrValue_CeString:
-			md[k] = at.CeString
-		case *grpcMsg.AttrValue_CeTimestamp:
-			md[k] = at.CeTimestamp
-		case *grpcMsg.AttrValue_CeUri:
-			md[k] = model.Uri(at.CeUri)
-		case *grpcMsg.AttrValue_CeUriRef:
-			md[k] = model.UriRef(at.CeUriRef)
-		default:
-			panic(fmt.Sprintf("message decode failure: unrecognzied attribute value type: %T", v))
-		}
-	}
-	msg.Metadata = md
-	msg.Data = src.Data
-	return
-}
-
-func encodeError(svcErr error) (err error) {
+func encodeError(src error) (dst error) {
 	switch {
-	case svcErr == nil:
-		err = nil
+	case src == nil:
+		dst = nil
+	case errors.Is(src, consumer.ErrInternal):
+		dst = status.Error(codes.Internal, fmt.Sprintf("consumer failure: %s", src.Error()))
+	case errors.Is(src, consumer.ErrQueueFull):
+		dst = status.Error(codes.ResourceExhausted, fmt.Sprintf("consumer failure: %s", src.Error()))
+	case errors.Is(src, consumer.ErrQueueMissing):
+		dst = status.Error(codes.NotFound, fmt.Sprintf("consumer failure: %s", src.Error()))
+	case errors.Is(src, matches.ErrInternal):
+		dst = status.Error(codes.Internal, fmt.Sprintf("matches failure: %s", src.Error()))
+	case errors.Is(src, queue.ErrInternal):
+		dst = status.Error(codes.Internal, fmt.Sprintf("queue failure: %s", src.Error()))
+	case errors.Is(src, queue.ErrQueueFull):
+		dst = status.Error(codes.ResourceExhausted, src.Error())
+	case errors.Is(src, queue.ErrQueueMissing):
+		dst = status.Error(codes.NotFound, src.Error())
 	default:
-		err = status.Error(codes.Internal, svcErr.Error())
+		dst = status.Error(codes.Internal, src.Error())
 	}
 	return
 }
