@@ -41,12 +41,14 @@ func TestServiceController_Submit(t *testing.T) {
 	client := NewServiceClient(conn)
 	//
 	cases := map[string]error{
-		"ok":            nil,
-		"consumer_fail": status.Error(codes.Internal, "consumer failure: internal failure"),
-		"matches_fail":  status.Error(codes.Internal, "matches failure: internal failure"),
-		"queue_fail":    status.Error(codes.Internal, "queue failure: internal failure"),
-		"queue_full":    status.Error(codes.ResourceExhausted, "queue is full"),
-		"queue_missing": status.Error(codes.NotFound, "missing queue"),
+		"ok":                     nil,
+		"consumer_fail":          status.Error(codes.Internal, "consumer failure: internal failure"),
+		"consumer_queue_full":    status.Error(codes.ResourceExhausted, "consumer failure: queue is full"),
+		"consumer_queue_missing": status.Error(codes.NotFound, "consumer failure: missing queue"),
+		"matches_fail":           status.Error(codes.Internal, "matches failure: internal failure"),
+		"queue_fail":             status.Error(codes.Internal, "queue failure: internal failure"),
+		"queue_full":             status.Error(codes.ResourceExhausted, "queue is full"),
+		"queue_missing":          status.Error(codes.NotFound, "missing queue"),
 	}
 	//
 	for k, expectedErr := range cases {

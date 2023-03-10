@@ -2,7 +2,6 @@ package consumer
 
 import (
 	"context"
-	"github.com/awakari/router/api/grpc/queue"
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -11,9 +10,9 @@ import (
 func TestService_Submit(t *testing.T) {
 	svc := NewService(NewClientMock())
 	cases := map[string]error{
-		"missing": queue.ErrQueueMissing,
+		"missing": ErrQueueMissing,
 		"ok":      nil,
-		"full":    queue.ErrQueueFull,
+		"full":    ErrQueueFull,
 		"fail":    ErrInternal,
 	}
 	msg := event.New("1.0")

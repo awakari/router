@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/awakari/router/api/grpc/queue"
 	format "github.com/cloudevents/sdk-go/binding/format/protobuf/v2"
 	"github.com/cloudevents/sdk-go/binding/format/protobuf/v2/pb"
 	"github.com/cloudevents/sdk-go/v2/event"
@@ -21,6 +20,10 @@ type service struct {
 }
 
 var ErrInternal = errors.New("internal failure")
+
+var ErrQueueMissing = errors.New("missing queue")
+
+var ErrQueueFull = errors.New("queue is full")
 
 func NewService(client ServiceClient) Service {
 	return service{
@@ -45,11 +48,11 @@ func decodeError(src error) (dst error) {
 	case codes.OK:
 		dst = nil
 	case codes.NotFound:
-		dst = queue.ErrQueueMissing
+		dst = fmt.Errorf("%w: consumer", ErrQueueMissing)
 	case codes.ResourceExhausted:
-		dst = queue.ErrQueueFull
+		dst = fmt.Errorf("%w: consumer", ErrQueueFull)
 	default:
-		dst = fmt.Errorf("%w: %s", ErrInternal, src)
+		dst = fmt.Errorf("%w: consumer: %s", ErrInternal, src)
 	}
 	return
 }

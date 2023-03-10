@@ -44,6 +44,10 @@ func encodeError(src error) (dst error) {
 		dst = nil
 	case errors.Is(src, consumer.ErrInternal):
 		dst = status.Error(codes.Internal, fmt.Sprintf("consumer failure: %s", src.Error()))
+	case errors.Is(src, consumer.ErrQueueFull):
+		dst = status.Error(codes.ResourceExhausted, fmt.Sprintf("consumer failure: %s", src.Error()))
+	case errors.Is(src, consumer.ErrQueueMissing):
+		dst = status.Error(codes.NotFound, fmt.Sprintf("consumer failure: %s", src.Error()))
 	case errors.Is(src, matches.ErrInternal):
 		dst = status.Error(codes.Internal, fmt.Sprintf("matches failure: %s", src.Error()))
 	case errors.Is(src, queue.ErrInternal):

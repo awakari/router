@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/awakari/router/api/grpc/consumer"
 	"github.com/awakari/router/api/grpc/matches"
-	"github.com/awakari/router/api/grpc/queue"
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -15,8 +14,8 @@ func TestService_Submit(t *testing.T) {
 	cases := map[string]error{
 		"ok":      nil,
 		"fail":    matches.ErrInternal,
-		"missing": queue.ErrQueueMissing,
-		"full":    queue.ErrQueueFull,
+		"missing": consumer.ErrQueueMissing,
+		"full":    consumer.ErrQueueFull,
 	}
 	for k, expectedErr := range cases {
 		t.Run(k, func(t *testing.T) {

@@ -2,7 +2,6 @@ package consumer
 
 import (
 	"context"
-	"github.com/awakari/router/api/grpc/queue"
 	"github.com/cloudevents/sdk-go/v2/event"
 )
 
@@ -16,9 +15,9 @@ func NewServiceMock() Service {
 func (sm serviceMock) Submit(ctx context.Context, msg *event.Event) (err error) {
 	switch msg.ID() {
 	case "missing":
-		err = queue.ErrQueueMissing
+		err = ErrQueueMissing
 	case "full":
-		err = queue.ErrQueueFull
+		err = ErrQueueFull
 	case "fail":
 		err = ErrInternal
 	}
