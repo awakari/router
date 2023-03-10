@@ -53,7 +53,7 @@ The service is configurable using the environment variables:
 | LOG_LEVEL                   | `-4`            | [Logging level](https://pkg.go.dev/golang.org/x/exp/slog#Level)                                  |
 | QUEUE_BATCH_SIZE            | `100`           | Work queue processing batch size                                                                 |
 | QUEUE_FALLBACK_ENABLED      | `true`          | Dead letter queue usage flag                                                                     |
-| QUEUE_FALLBACK_SUFFIX       | `fallback       | Dead letter queue name suffix, the resulting name will be `<QUEUE_NAME>-<QUEUE_FALLBACK_SUFFIX>` |
+| QUEUE_FALLBACK_SUFFIX       | `fallback`      | Dead letter queue name suffix, the resulting name will be `<QUEUE_NAME>-<QUEUE_FALLBACK_SUFFIX>` |
 | QUEUE_LIMIT                 | `1000`          | Work queue length limit                                                                          |
 | QUEUE_NAME                  | `router`        | Work queue name                                                                                  |
 | QUEUE_SLEEP_ON_EMPTY_MILLIS | `1000`          | Time to sleep if work queue is empty                                                             |
