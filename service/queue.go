@@ -52,7 +52,7 @@ func (qm queueMiddleware) processQueueOnce(ctx context.Context) (err error) {
 			time.Sleep(qm.sleepOnEmpty)
 		} else {
 			for _, msg := range msgs {
-				_ = qm.svc.Submit(ctx, msg)
+				_ = qm.svc.Submit(ctx, msg) // FIXME: submit the message to the dead letter queue on error
 			}
 		}
 	}
