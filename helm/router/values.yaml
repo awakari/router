@@ -91,6 +91,9 @@ log:
   level: -4
 queue:
   batchSize: 100
+  fallback:
+    enabled: true
+    suffix: "fallback"
   limit: 1000
   sleepOn:
     emptyMillis: 1000

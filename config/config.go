@@ -26,7 +26,11 @@ type ConsumerConfig struct {
 }
 
 type QueueConfig struct {
-	BatchSize          uint32 `envconfig:"QUEUE_BATCH_SIZE" default:"100" required:"true"`
+	BatchSize uint32 `envconfig:"QUEUE_BATCH_SIZE" default:"100" required:"true"`
+	FallBack  struct {
+		Enabled bool   `envconfig:"QUEUE_FALLBACK_ENABLED" default:"true" required:"true"`
+		Suffix  string `envconfig:"QUEUE_FALLBACK_SUFFIX" default:"fallback" required:"true""`
+	}
 	Limit              uint32 `envconfig:"QUEUE_LIMIT" default:"1000" required:"true"`
 	Name               string `envconfig:"QUEUE_NAME" default:"router" required:"true"`
 	SleepOnEmptyMillis uint32 `envconfig:"QUEUE_SLEEP_ON_EMPTY_MILLIS" default:"1000" required:"true"`

@@ -24,7 +24,7 @@ func (sm serviceMock) SetQueue(ctx context.Context, queue string, limit uint32) 
 }
 
 func (sm serviceMock) SubmitMessage(ctx context.Context, queue string, msg *event.Event) (err error) {
-	switch queue {
+	switch msg.ID() {
 	case "missing":
 		err = ErrQueueMissing
 	case "fail":

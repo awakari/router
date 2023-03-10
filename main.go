@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	grpcApi "github.com/awakari/router/api/grpc"
 	"github.com/awakari/router/api/grpc/consumer"
 	"github.com/awakari/router/api/grpc/matches"
@@ -52,6 +53,12 @@ func main() {
 	err = queueSvc.SetQueue(context.TODO(), cfg.Queue.Name, cfg.Queue.Limit)
 	if err != nil {
 		log.Error("failed to create the work queue", err)
+	}
+	if cfg.Queue.FallBack.Enabled {
+		err = queueSvc.SetQueue(context.TODO(), fmt.Sprintf("%s-%s", cfg.Queue.Name, cfg.Queue.FallBack.Suffix), cfg.Queue.Limit)
+	}
+	if err != nil {
+		log.Error("failed to create the fallback queue", err)
 	}
 	//
 	svc := service.NewService(matchesSvc, cfg.Api.Matches.BatchSize, consumerSvc)

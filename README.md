@@ -44,18 +44,21 @@ Subscription destination describes the destination route where the matching mess
 
 The service is configurable using the environment variables:
 
-| Variable                    | Example value   | Description                                                          |
-|-----------------------------|-----------------|----------------------------------------------------------------------|
-| API_PORT                    | `8080`          | gRPC API port                                                        |
-| API_CONSUMER_URI            | `consumer:8080` | Consumer dependency service URI                                      |
-| API_MATCHES_URI             | `matches:8080`  | [Matches](https://github.com/awakari/matches) dependency service URI |
-| API_MATCHES_BATCH_SIZE      | `100`           | Matches query results size limit                                     |
-| QUEUE_BATCH_SIZE            | `100`           | Work queue processing batch size                                     |
-| QUEUE_LIMIT                 | `1000`          | Work queue length limit                                              |
-| QUEUE_NAME                  | `router`        | Work queue name                                                      |
-| QUEUE_SLEEP_ON_EMPTY_MILLIS | `1000`          | Time to sleep if work queue is empty                                 |
-| QUEUE_SLEEP_ON_ERROR_MILLIS | `1000`          | Time to sleep if failed to poll the work queue                       |
-| QUEUE_URI                   | `queue:8080`    | Work queue service URI                                               |
+| Variable                    | Example value   | Description                                                                                      |
+|-----------------------------|-----------------|--------------------------------------------------------------------------------------------------|
+| API_PORT                    | `8080`          | gRPC API port                                                                                    |
+| API_CONSUMER_URI            | `consumer:8080` | Consumer dependency service URI                                                                  |
+| API_MATCHES_URI             | `matches:8080`  | [Matches](https://github.com/awakari/matches) dependency service URI                             |
+| API_MATCHES_BATCH_SIZE      | `100`           | Matches query results size limit                                                                 |
+| LOG_LEVEL                   | `-4`            | [Logging level](https://pkg.go.dev/golang.org/x/exp/slog#Level)                                  |
+| QUEUE_BATCH_SIZE            | `100`           | Work queue processing batch size                                                                 |
+| QUEUE_FALLBACK_ENABLED      | `true`          | Dead letter queue usage flag                                                                     |
+| QUEUE_FALLBACK_SUFFIX       | `fallback       | Dead letter queue name suffix, the resulting name will be `<QUEUE_NAME>-<QUEUE_FALLBACK_SUFFIX>` |
+| QUEUE_LIMIT                 | `1000`          | Work queue length limit                                                                          |
+| QUEUE_NAME                  | `router`        | Work queue name                                                                                  |
+| QUEUE_SLEEP_ON_EMPTY_MILLIS | `1000`          | Time to sleep if work queue is empty                                                             |
+| QUEUE_SLEEP_ON_ERROR_MILLIS | `1000`          | Time to sleep if failed to poll the work queue                                                   |
+| QUEUE_URI                   | `queue:8080`    | Work queue service URI                                                                           |
 
 # 3. Deployment
 

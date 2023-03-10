@@ -19,5 +19,7 @@ func TestConfig(t *testing.T) {
 	assert.Equal(t, uint32(100), cfg.Queue.BatchSize)
 	assert.Equal(t, uint32(1000), cfg.Queue.SleepOnEmptyMillis)
 	assert.Equal(t, uint32(1000), cfg.Queue.SleepOnErrorMillis)
+	assert.True(t, cfg.Queue.FallBack.Enabled)
+	assert.Equal(t, "fallback", cfg.Queue.FallBack.Suffix)
 	assert.Equal(t, "queue:8080", cfg.Queue.Uri)
 }

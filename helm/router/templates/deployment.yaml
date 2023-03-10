@@ -40,6 +40,12 @@ spec:
               value: "{{ .Values.api.consumer.uri }}"
             - name: LOG_LEVEL
               value: "{{ .Values.log.level }}"
+            - name: QUEUE_BATCH_SIZE
+              value: "{{ .Values.queue.batchSize }}"
+            - name: QUEUE_FALLBACK_ENABLED
+              value: "{{ .Values.queue.fallback.enabled }}"
+            - name: QUEUE_FALLBACK_SUFFIX
+              value: "{{ .Values.queue.fallback.suffix }}"
             - name: QUEUE_LIMIT
               value: "{{ .Values.queue.limit }}"
             - name: QUEUE_NAME
