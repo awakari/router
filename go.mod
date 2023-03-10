@@ -1,6 +1,6 @@
 module github.com/awakari/router
 
-go 1.20
+go 1.20.2
 
 require (
 	github.com/cloudevents/sdk-go/binding/format/protobuf/v2 v2.13.0
