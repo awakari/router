@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/kelseyhightower/envconfig"
+	"time"
 )
 
 type Config struct {
@@ -22,7 +23,8 @@ type MatchesConfig struct {
 }
 
 type ConsumerConfig struct {
-	Uri string `envconfig:"API_CONSUMER_URI" default:"consumer:8080" required:"true"`
+	Backoff time.Duration `envconfig:"API_CONSUMER_BACKOFF" default:"1s" required:"true"`
+	Uri     string        `envconfig:"API_CONSUMER_URI" default:"consumer:8080" required:"true"`
 }
 
 type QueueConfig struct {
@@ -31,11 +33,11 @@ type QueueConfig struct {
 		Enabled bool   `envconfig:"QUEUE_FALLBACK_ENABLED" default:"true" required:"true"`
 		Suffix  string `envconfig:"QUEUE_FALLBACK_SUFFIX" default:"fallback" required:"true""`
 	}
-	Limit              uint32 `envconfig:"QUEUE_LIMIT" default:"1000" required:"true"`
-	Name               string `envconfig:"QUEUE_NAME" default:"router" required:"true"`
-	SleepOnEmptyMillis uint32 `envconfig:"QUEUE_SLEEP_ON_EMPTY_MILLIS" default:"1000" required:"true"`
-	SleepOnErrorMillis uint32 `envconfig:"QUEUE_SLEEP_ON_ERROR_MILLIS" default:"1000" required:"true"`
-	Uri                string `envconfig:"QUEUE_URI" default:"queue:8080" required:"true"`
+	Limit        uint32        `envconfig:"QUEUE_LIMIT" default:"1000" required:"true"`
+	Name         string        `envconfig:"QUEUE_NAME" default:"router" required:"true"`
+	BackoffEmpty time.Duration `envconfig:"QUEUE_BACKOFF_EMPTY" default:"1s" required:"true"`
+	BackoffError time.Duration `envconfig:"QUEUE_BACKOFF_ERROR" default:"1s" required:"true"`
+	Uri          string        `envconfig:"QUEUE_URI" default:"queue:8080" required:"true"`
 }
 
 func NewConfigFromEnv() (cfg Config, err error) {

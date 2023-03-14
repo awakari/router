@@ -85,6 +85,7 @@ api:
     batchSize: 100
     uri: "matches:8080"
   consumer:
+    backoff: "1s"
     uri: "consumer:8080"
 log:
   # https://pkg.go.dev/golang.org/x/exp/slog#Level
@@ -95,7 +96,7 @@ queue:
     enabled: true
     suffix: "fallback"
   limit: 1000
-  sleepOn:
-    emptyMillis: 1000
-    errorMillis: 1000
+  backoff:
+    empty: "1s"
+    error: "1s"
   uri: "queue:8080"

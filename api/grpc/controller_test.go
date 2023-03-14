@@ -3,15 +3,14 @@ package grpc
 import (
 	"context"
 	"fmt"
+	"github.com/awakari/router/api/grpc/queue"
 	"github.com/awakari/router/service"
 	"github.com/cloudevents/sdk-go/binding/format/protobuf/v2/pb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/slog"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/status"
 	"os"
 	"testing"
 )
@@ -40,23 +39,88 @@ func TestServiceController_Submit(t *testing.T) {
 	require.Nil(t, err)
 	client := NewServiceClient(conn)
 	//
-	cases := map[string]error{
-		"ok":                     nil,
-		"consumer_fail":          status.Error(codes.Internal, "consumer failure: internal failure"),
-		"consumer_queue_full":    status.Error(codes.ResourceExhausted, "consumer failure: queue is full"),
-		"consumer_queue_missing": status.Error(codes.NotFound, "consumer failure: missing queue"),
-		"matches_fail":           status.Error(codes.Internal, "matches failure: internal failure"),
-		"queue_fail":             status.Error(codes.Internal, "queue failure: internal failure"),
-		"queue_full":             status.Error(codes.ResourceExhausted, "queue is full"),
-		"queue_missing":          status.Error(codes.NotFound, "missing queue"),
+	cases := map[string]struct {
+		msgIds []string
+		resp   *queue.BatchResponse
+		err    error
+	}{
+		"ok": {
+			msgIds: []string{
+				"msg0",
+				"msg1",
+				"msg2",
+			},
+			resp: &queue.BatchResponse{
+				Count: 3,
+				Err:   "",
+			},
+		},
+		"consumer_fail": {
+			msgIds: []string{
+				"consumer_fail",
+				"msg1",
+				"msg2",
+			},
+			resp: &queue.BatchResponse{
+				Count: 0,
+				Err:   "consumer: internal failure",
+			},
+		},
+		"consumer_queue_missing": {
+			msgIds: []string{
+				"msg0",
+				"consumer_queue_missing",
+				"msg2",
+			},
+			resp: &queue.BatchResponse{
+				Count: 1,
+				Err:   "consumer: missing queue",
+			},
+		},
+		"matches_fail": {
+			msgIds: []string{
+				"msg0",
+				"msg1",
+				"matches_fail",
+			},
+			resp: &queue.BatchResponse{
+				Count: 2,
+				Err:   "matches: internal failure",
+			},
+		},
+		"queue_fail": {
+			msgIds: []string{
+				"queue_fail",
+				"msg1",
+				"msg2",
+			},
+			resp: &queue.BatchResponse{
+				Count: 0,
+				Err:   "queue: internal failure",
+			},
+		},
+		"queue_missing": {
+			msgIds: []string{
+				"msg0",
+				"queue_missing",
+				"msg2",
+			},
+			resp: &queue.BatchResponse{
+				Count: 1,
+				Err:   "missing queue",
+			},
+		},
 	}
-	//
-	for k, expectedErr := range cases {
+	for k, c := range cases {
 		t.Run(k, func(t *testing.T) {
-			_, err := client.Submit(context.TODO(), &pb.CloudEvent{
-				Id: k,
-			})
-			assert.ErrorIs(t, err, expectedErr)
+			var msgs []*pb.CloudEvent
+			for _, msgId := range c.msgIds {
+				msgs = append(msgs, &pb.CloudEvent{Id: msgId})
+			}
+			resp, err := client.SubmitBatch(context.TODO(), &SubmitBatchRequest{Msgs: msgs})
+			assert.Equal(t, c.resp.Count, resp.Count)
+			assert.Equal(t, c.resp.Err, resp.Err)
+			assert.Nil(t, err)
 		})
 	}
 }

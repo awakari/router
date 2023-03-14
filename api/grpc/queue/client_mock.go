@@ -69,17 +69,23 @@ func (cm clientMock) SetQueue(ctx context.Context, in *SetQueueRequest, opts ...
 	return &emptypb.Empty{}, err
 }
 
-func (cm clientMock) SubmitMessage(ctx context.Context, in *SubmitMessageRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	var err error
-	switch in.Queue {
-	case "fail":
-		err = status.Error(codes.Internal, "failed to submit the message")
-	case "full":
-		err = status.Error(codes.ResourceExhausted, "failed to submit the message")
-	case "missing":
-		err = status.Error(codes.NotFound, "failed to submit the message")
+func (cm clientMock) SubmitMessageBatch(ctx context.Context, in *SubmitMessageBatchRequest, opts ...grpc.CallOption) (*BatchResponse, error) {
+	resp := &BatchResponse{}
+	for _, msg := range in.Msgs {
+		if msg.Id == "fail" {
+			resp.Err = ErrInternal.Error()
+			break
+		}
+		if msg.Id == "missing" {
+			resp.Err = ErrQueueMissing.Error()
+			break
+		}
+		if msg.Id == "full" {
+			break
+		}
+		resp.Count++
 	}
-	return &emptypb.Empty{}, err
+	return resp, nil
 }
 
 func (cm clientMock) Poll(ctx context.Context, in *PollRequest, opts ...grpc.CallOption) (*PollResponse, error) {

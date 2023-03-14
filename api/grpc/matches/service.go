@@ -21,7 +21,7 @@ type service struct {
 }
 
 // ErrInternal indicates some unexpected internal failure.
-var ErrInternal = errors.New("internal failure")
+var ErrInternal = errors.New("matches: internal failure")
 
 func NewService(client ServiceClient) Service {
 	return service{

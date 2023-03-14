@@ -23,14 +23,20 @@ func (sm serviceMock) SetQueue(ctx context.Context, queue string, limit uint32) 
 	return
 }
 
-func (sm serviceMock) SubmitMessage(ctx context.Context, queue string, msg *event.Event) (err error) {
-	switch msg.ID() {
-	case "missing":
-		err = ErrQueueMissing
-	case "fail":
-		err = ErrInternal
-	case "full":
-		err = ErrQueueFull
+func (sm serviceMock) SubmitMessageBatch(ctx context.Context, queue string, msgs []*event.Event) (count uint32, err error) {
+	for _, msg := range msgs {
+		if msg.ID() == "missing" {
+			err = ErrQueueMissing
+			break
+		}
+		if msg.ID() == "fail" {
+			err = ErrInternal
+			break
+		}
+		if msg.ID() == "full" {
+			break
+		}
+		count++
 	}
 	return
 }

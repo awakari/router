@@ -61,7 +61,7 @@ func main() {
 		log.Error("failed to create the fallback queue", err)
 	}
 	//
-	svc := service.NewService(matchesSvc, cfg.Api.Matches.BatchSize, consumerSvc)
+	svc := service.NewService(matchesSvc, cfg.Api.Matches.BatchSize, consumerSvc, cfg.Api.Consumer.Backoff)
 	svc = service.NewLoggingMiddleware(svc, log)
 	svc = service.NewQueueMiddleware(svc, queueSvc, cfg.Queue)
 	//

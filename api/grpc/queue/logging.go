@@ -26,11 +26,11 @@ func (l logging) SetQueue(ctx context.Context, name string, limit uint32) (err e
 	return l.svc.SetQueue(ctx, name, limit)
 }
 
-func (l logging) SubmitMessage(ctx context.Context, queue string, msg *event.Event) (err error) {
+func (l logging) SubmitMessageBatch(ctx context.Context, queue string, msgs []*event.Event) (count uint32, err error) {
 	defer func() {
-		l.log.Debug(fmt.Sprintf("queue.SubmitMessage(queue=%s, msg.Id=%s): %s", queue, msg.ID(), err))
+		l.log.Debug(fmt.Sprintf("queue.SubmitMessageBatch(queue=%s, count=%d): %d, %s", queue, len(msgs), count, err))
 	}()
-	return l.svc.SubmitMessage(ctx, queue, msg)
+	return l.svc.SubmitMessageBatch(ctx, queue, msgs)
 }
 
 func (l logging) Poll(ctx context.Context, queue string, limit uint32) (msgs []*event.Event, err error) {

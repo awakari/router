@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package queue;
 
-option go_package = "./api/grpc/queue";
+option go_package = "github.com/awakari/router/api/grpc/queue";
 
 import "google/protobuf/empty.proto";
 import "api/grpc/cloudevents/cloudevent.proto";
@@ -12,8 +12,8 @@ service Service {
   // Creates a new queue or updates the existing one's length limit.
   rpc SetQueue(SetQueueRequest) returns (google.protobuf.Empty);
 
-  // Enqueue a message to the specified queue.
-  rpc SubmitMessage(SubmitMessageRequest) returns (google.protobuf.Empty);
+  // Tries to enqueue a batch of messages.
+  rpc SubmitMessageBatch(SubmitMessageBatchRequest) returns (BatchResponse);
 
   // Get new messages batch from the specified queue. Also removes the received messages from the queue.
   rpc Poll(PollRequest) returns (PollResponse);
@@ -27,6 +27,16 @@ message SetQueueRequest{
 message SubmitMessageRequest {
   string queue = 1;
   pb.CloudEvent msg = 2;
+}
+
+message SubmitMessageBatchRequest {
+  string queue = 1;
+  repeated pb.CloudEvent msgs = 2;
+}
+
+message BatchResponse {
+  uint32 count = 1;
+  string err = 2; // gRPC forces the response to be nil when there's an error, so send the actual error in the response
 }
 
 message PollRequest {
