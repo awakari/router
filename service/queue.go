@@ -6,6 +6,7 @@ import (
 	"github.com/awakari/router/api/grpc/queue"
 	"github.com/awakari/router/config"
 	"github.com/cloudevents/sdk-go/v2/event"
+	"strings"
 	"time"
 )
 
@@ -14,8 +15,8 @@ type queueMiddleware struct {
 	queueSvc          queue.Service
 	queueName         string
 	queueFallbackName string
-	sleepOnEmpty      time.Duration
-	sleepOnError      time.Duration
+	backoffEmpty      time.Duration
+	backoffError      time.Duration
 	batchSize         uint32
 }
 
@@ -25,16 +26,16 @@ func NewQueueMiddleware(svc Service, queueSvc queue.Service, queueConfig config.
 		queueSvc:          queueSvc,
 		queueName:         queueConfig.Name,
 		queueFallbackName: fmt.Sprintf("%s-%s", queueConfig.Name, queueConfig.FallBack.Suffix),
-		sleepOnEmpty:      time.Duration(queueConfig.SleepOnEmptyMillis) * time.Millisecond,
-		sleepOnError:      time.Duration(queueConfig.SleepOnErrorMillis) * time.Millisecond,
+		backoffEmpty:      queueConfig.BackoffEmpty,
+		backoffError:      queueConfig.BackoffError,
 		batchSize:         queueConfig.BatchSize,
 	}
 	go qm.processQueueLoop()
 	return qm
 }
 
-func (qm queueMiddleware) Submit(ctx context.Context, msg *event.Event) (err error) {
-	return qm.queueSvc.SubmitMessage(ctx, qm.queueName, msg)
+func (qm queueMiddleware) SubmitBatch(ctx context.Context, msgs []*event.Event) (count uint32, err error) {
+	return qm.queueSvc.SubmitMessageBatch(ctx, qm.queueName, msgs)
 }
 
 func (qm queueMiddleware) processQueueLoop() {
@@ -42,7 +43,7 @@ func (qm queueMiddleware) processQueueLoop() {
 	for {
 		err := qm.processQueueOnce(ctx)
 		if err != nil {
-			time.Sleep(qm.sleepOnError)
+			time.Sleep(qm.backoffError)
 		}
 	}
 }
@@ -51,23 +52,40 @@ func (qm queueMiddleware) processQueueOnce(ctx context.Context) (err error) {
 	var msgs []*event.Event
 	msgs, err = qm.queueSvc.Poll(ctx, qm.queueName, qm.batchSize)
 	if err == nil {
-		if len(msgs) == 0 {
-			time.Sleep(qm.sleepOnEmpty)
+		msgCount := uint32(len(msgs))
+		if msgCount == 0 {
+			time.Sleep(qm.backoffEmpty)
 		} else {
-			for _, msg := range msgs {
-				qm.processMessage(ctx, msg)
+			var accepted, n uint32
+			for accepted < msgCount {
+				n, err = qm.svc.SubmitBatch(ctx, msgs[accepted:])
+				accepted += n
+				if err != nil {
+					if accepted < msgCount {
+						qm.submitToFallback(ctx, msgs[accepted:])
+					}
+					break
+				}
 			}
 		}
 	}
 	return
 }
 
-func (qm queueMiddleware) processMessage(ctx context.Context, msg *event.Event) {
-	err := qm.svc.Submit(ctx, msg)
+func (qm queueMiddleware) submitToFallback(ctx context.Context, msgs []*event.Event) {
+	accepted, err := qm.queueSvc.SubmitMessageBatch(ctx, qm.queueFallbackName, msgs)
 	if err != nil {
-		err = qm.queueSvc.SubmitMessage(ctx, qm.queueFallbackName, msg)
+		var msgIds []string
+		for _, msg := range msgs {
+			msgIds = append(msgIds, msg.ID())
+		}
+		panic("failed to submit the messages to the fallback queue, dropped message ids:\n\t" + strings.Join(msgIds, "\n\t"))
 	}
-	if err != nil {
-		panic(err)
+	if accepted < uint32(len(msgs)) {
+		var msgIds []string
+		for _, msg := range msgs {
+			msgIds = append(msgIds, msg.ID())
+		}
+		panic("fallback queue has not enough capacity, dropped message ids:\n\t" + strings.Join(msgIds, "\n\t"))
 	}
 }

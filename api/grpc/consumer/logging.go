@@ -19,9 +19,9 @@ func NewLoggingMiddleware(svc Service, log *slog.Logger) Service {
 	}
 }
 
-func (lm loggingMiddleware) Submit(ctx context.Context, msg *event.Event) (err error) {
+func (lm loggingMiddleware) SubmitBatch(ctx context.Context, msgs []*event.Event) (count uint32, err error) {
 	defer func() {
-		lm.log.Debug(fmt.Sprintf("consumer.Submit(msg.Id=%s): %s", msg.ID(), err))
+		lm.log.Debug(fmt.Sprintf("consumer.SubmitBatch(count=%d): %d, %s", len(msgs), count, err))
 	}()
-	return lm.svc.Submit(ctx, msg)
+	return lm.svc.SubmitBatch(ctx, msgs)
 }

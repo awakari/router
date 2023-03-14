@@ -2,11 +2,8 @@ package consumer
 
 import (
 	"context"
-	"github.com/cloudevents/sdk-go/binding/format/protobuf/v2/pb"
+	"github.com/awakari/router/api/grpc/queue"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type clientMock struct {
@@ -16,14 +13,21 @@ func NewClientMock() ServiceClient {
 	return clientMock{}
 }
 
-func (cm clientMock) Submit(ctx context.Context, in *pb.CloudEvent, opts ...grpc.CallOption) (resp *emptypb.Empty, err error) {
-	switch in.Id {
-	case "missing":
-		err = status.Error(codes.NotFound, "destination queue not found")
-	case "full":
-		err = status.Error(codes.ResourceExhausted, "destination queue is full")
-	case "fail":
-		err = status.Error(codes.Internal, "internal failure")
+func (cm clientMock) SubmitBatch(ctx context.Context, in *SubmitBatchRequest, opts ...grpc.CallOption) (resp *queue.BatchResponse, err error) {
+	resp = &queue.BatchResponse{}
+	for _, msg := range in.Msgs {
+		if msg.Id == "fail" {
+			resp.Err = ErrInternal.Error()
+			break
+		}
+		if msg.Id == "missing" {
+			resp.Err = ErrQueueMissing.Error()
+			break
+		}
+		if msg.Id == "full" {
+			break
+		}
+		resp.Count++
 	}
-	return &emptypb.Empty{}, err
+	return resp, nil
 }

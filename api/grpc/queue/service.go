@@ -9,11 +9,12 @@ import (
 	"github.com/cloudevents/sdk-go/v2/event"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"strings"
 )
 
 type Service interface {
 	SetQueue(ctx context.Context, name string, limit uint32) (err error)
-	SubmitMessage(ctx context.Context, queue string, msg *event.Event) (err error)
+	SubmitMessageBatch(ctx context.Context, queue string, msgs []*event.Event) (count uint32, err error)
 	Poll(ctx context.Context, queue string, limit uint32) (msgs []*event.Event, err error)
 }
 
@@ -21,11 +22,9 @@ type service struct {
 	client ServiceClient
 }
 
-var ErrInternal = errors.New("internal failure")
+var ErrInternal = errors.New("queue: internal failure")
 
 var ErrQueueMissing = errors.New("missing queue")
-
-var ErrQueueFull = errors.New("queue is full")
 
 func NewService(client ServiceClient) Service {
 	return service{
@@ -45,17 +44,28 @@ func (svc service) SetQueue(ctx context.Context, name string, limit uint32) (err
 	return
 }
 
-func (svc service) SubmitMessage(ctx context.Context, queue string, msg *event.Event) (err error) {
+func (svc service) SubmitMessageBatch(ctx context.Context, queue string, msgs []*event.Event) (count uint32, err error) {
 	var msgProto *pb.CloudEvent
-	msgProto, err = format.ToProto(msg)
-	if err == nil {
-		req := SubmitMessageRequest{
-			Queue: queue,
-			Msg:   msgProto,
+	var msgProtos []*pb.CloudEvent
+	for _, msg := range msgs {
+		msgProto, err = format.ToProto(msg)
+		if err != nil {
+			break
 		}
-		_, err = svc.client.SubmitMessage(ctx, &req)
+		msgProtos = append(msgProtos, msgProto)
+	}
+	if err == nil {
+		req := SubmitMessageBatchRequest{
+			Queue: queue,
+			Msgs:  msgProtos,
+		}
+		var resp *BatchResponse
+		resp, err = svc.client.SubmitMessageBatch(ctx, &req)
 		if err != nil {
 			err = decodeError(err)
+		} else {
+			count = resp.Count
+			err = decodeRespError(resp.Err)
 		}
 	}
 	return
@@ -90,10 +100,22 @@ func decodeError(src error) (dst error) {
 		dst = nil
 	case codes.NotFound:
 		dst = ErrQueueMissing
-	case codes.ResourceExhausted:
-		dst = ErrQueueFull
 	default:
 		dst = fmt.Errorf("%w: %s", ErrInternal, src)
+	}
+	return
+}
+
+func decodeRespError(src string) (err error) {
+	switch {
+	case strings.HasPrefix(src, ErrInternal.Error()):
+		err = fmt.Errorf("%w: %s", ErrInternal, src[len(ErrInternal.Error()):])
+	case strings.HasPrefix(src, ErrQueueMissing.Error()):
+		err = fmt.Errorf("%w: %s", ErrQueueMissing, src[len(ErrQueueMissing.Error()):])
+	case src == "":
+		err = nil
+	default:
+		err = errors.New(src)
 	}
 	return
 }
